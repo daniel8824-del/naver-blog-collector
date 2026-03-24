@@ -19,9 +19,9 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from wordcloud import WordCloud
 
 try:
-    from konlpy.tag import Okt
+    from kiwipiepy import Kiwi
 except ImportError:  # pragma: no cover - depends on local runtime
-    Okt = None  # type: ignore[assignment]
+    Kiwi = None  # type: ignore[assignment]
 
 
 DEFAULT_STOPWORDS = {
@@ -53,16 +53,17 @@ NEGATIVE_LEXICON = {
 }
 
 SENTIMENT_LEXICON = {**POSITIVE_LEXICON, **NEGATIVE_LEXICON}
-_OKT: Okt | None = None
+
+try:
+    kiwi = Kiwi() if Kiwi is not None else None
+except Exception:  # pragma: no cover - depends on local runtime
+    kiwi = None
 
 
-def _get_okt() -> Okt:
-    global _OKT
-    if Okt is None:
-        raise ImportError("konlpy is required for Korean text mining. Install `konlpy` first.")
-    if _OKT is None:
-        _OKT = Okt()
-    return _OKT
+def _tokenize_with_kiwi(text: str) -> list:
+    if kiwi is None:
+        raise ImportError("kiwipiepy is required for Korean text mining. Install `kiwipiepy` first.")
+    return kiwi.tokenize(text)
 
 
 def _normalize_text(text: str) -> str:
@@ -79,11 +80,13 @@ def _tokenize_korean(text: str, stopwords: set[str] | None = None) -> list[str]:
     if not normalized:
         return []
 
-    okt = _get_okt()
+    tokenized = [
+        token.form
+        for token in _tokenize_with_kiwi(normalized)
+        if token.tag.startswith("NN") or token.tag.startswith("VA") or token.tag.startswith("VV")
+    ]
     tokens: list[str] = []
-    for word, pos in okt.pos(normalized, norm=True, stem=True):
-        if pos not in {"Noun", "Adjective"}:
-            continue
+    for word in tokenized:
         if len(word) < 2:
             continue
         if word in stopword_set:
