@@ -86,6 +86,37 @@ def to_csv(articles: list, filepath: str, query: str = ""):
     console.print(f"[green]CSV 저장: {filepath}[/green]")
 
 
+def to_txt(articles: list, filepath: str, query: str = ""):
+    """전체 정보 텍스트 파일로 저장. 테이블 형태 + 본문."""
+    path = _prepare_output_path(filepath)
+    lines = []
+    lines.append(f"네이버 블로그 수집 결과: {query}")
+    lines.append(f"수집일시: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    lines.append(f"총 {len(articles)}건")
+    lines.append("=" * 70)
+
+    for i, a in enumerate(articles, 1):
+        title = a.get("title", "")
+        blogger = a.get("bloggerName", "")
+        postdate = a.get("postdate", "")
+        url = a.get("url", "")
+        content = a.get("content", "")
+        length = a.get("content_length", len(content))
+
+        lines.append(f"\n[{i}] {title}")
+        lines.append(f"    블로거: {blogger}")
+        lines.append(f"    날짜:   {postdate}")
+        lines.append(f"    URL:    {url}")
+        lines.append(f"    글자수: {length:,}자")
+        lines.append("-" * 70)
+        lines.append(content)
+        lines.append("=" * 70)
+
+    text = "\n".join(lines) + "\n"
+    path.write_text(text, encoding="utf-8")
+    console.print(f"[green]TXT 저장: {filepath}[/green]")
+
+
 def to_excel(articles: list, filepath: str, query: str = ""):
     """openpyxl로 Excel 파일 저장. 시트명=키워드, 컬럼 너비 자동조절."""
     from openpyxl import Workbook

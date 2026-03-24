@@ -267,8 +267,10 @@ def cmd_search(args):
         downloads = Path.home()
     save_path = str(downloads / filename)
 
-    from nblog.output import to_csv
+    from nblog.output import to_csv, to_txt
     to_csv(articles, save_path, query_label)
+    txt_path = save_path.rsplit(".", 1)[0] + ".txt"
+    to_txt(articles, txt_path, query_label)
     console.print(f"  총 {len(articles)}건 수집 완료\n")
 
 
