@@ -255,8 +255,14 @@ def cmd_search(args):
     if not filename.endswith(".csv"):
         filename += ".csv"
 
-    downloads = Path.home() / "Downloads"
-    if not downloads.exists():
+    # WSL이면 Windows 다운로드 폴더 우선
+    win_downloads = Path("/mnt/c/Users") / os.getenv("USER", "daniel") / "Downloads"
+    linux_downloads = Path.home() / "Downloads"
+    if win_downloads.is_dir():
+        downloads = win_downloads
+    elif linux_downloads.is_dir():
+        downloads = linux_downloads
+    else:
         downloads = Path.home()
     save_path = str(downloads / filename)
 
