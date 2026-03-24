@@ -80,8 +80,8 @@ blog search "맛집 추천" 10
 # 멀티 키워드 검색 (콤마로 구분)
 blog search "서울 카페,부산 맛집" 5
 
-# 정확도순 정렬
-blog search "파이썬" -sort sim
+# 관련성순 정렬 (기본: 최신순)
+blog search "파이썬" -r
 
 # 본문 추출 없이 빠르게 검색만
 blog search "맛집" -fast

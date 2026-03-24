@@ -206,10 +206,14 @@ def clean_blog_body(html_or_text: str) -> str:
     # 마크다운 링크
     text = re.sub(r"\[[^\]]+\]\([^\)]+\)", "", text)
     text = re.sub(r"!\[.*?\]\(.*?\)", "", text)
+    # Zero-Width Space 및 보이지 않는 문자 제거 (이미지 자리 잔재)
+    text = re.sub(r"[\u200b\u200c\u200d\u200e\u200f\ufeff\u00a0]", "", text)
     # 공백 정리
-    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"\n{2,}", "\n\n", text)
     text = re.sub(r" {2,}", " ", text)
     text = re.sub(r"^\s+$", "", text, flags=re.MULTILINE)
+    # 빈 줄 재정리 (위에서 빈 줄만 남은 라인 제거 후)
+    text = re.sub(r"\n{2,}", "\n\n", text)
     text = text.strip()
 
     if len(text) < 20:
