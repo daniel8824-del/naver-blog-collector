@@ -124,7 +124,8 @@ def cmd_search(args):
         console.print(f"\n[bold blue]멀티 키워드 검색[/bold blue] {len(queries)}개: {', '.join(queries)}")
     else:
         console.print(f"\n[bold blue]네이버 블로그 검색 중...[/bold blue] '{queries[0]}'")
-    console.print(f"  키워드당 {count}건 / 정렬: {args.sort}", style="dim")
+    sort = "sim" if getattr(args, "relevance", False) else "date"
+    console.print(f"  키워드당 {count}건 / 정렬: {'관련성순' if sort == 'sim' else '최신순'}", style="dim")
 
     # 1단계: 검색 (키워드별 실행 후 병합)
     results = []
@@ -133,7 +134,7 @@ def cmd_search(args):
         if len(queries) > 1:
             console.print(f"\n  [cyan][{qi}/{len(queries)}][/cyan] '{query}' 검색 중...")
         try:
-            hits = search_blogs(query=query, count=count, sort=args.sort)
+            hits = search_blogs(query=query, count=count, sort=sort)
         except SystemExit as e:
             console.print(str(e))
             return
@@ -462,7 +463,7 @@ def main():
     p_search = sub.add_parser("search", help="블로그 검색 + 본문 추출 + CSV 저장")
     p_search.add_argument("query", nargs="+", help="검색어 (콤마로 멀티 키워드, 마지막 숫자는 건수)")
     p_search.add_argument("-n", "--count", type=int, default=10, help="키워드당 검색 건수 (기본: 10)")
-    p_search.add_argument("-sort", default="date", choices=["date", "sim"], help="정렬: date(최신순), sim(정확도순)")
+    p_search.add_argument("-r", action="store_true", dest="relevance", help="관련성순 정렬 (기본: 최신순)")
     p_search.add_argument("-f", dest="file", help="저장 파일명")
     p_search.add_argument("-fast", action="store_true", help="본문 추출 생략 (검색 결과만)")
     p_search.set_defaults(func=cmd_search)
@@ -471,7 +472,7 @@ def main():
     p_collect = sub.add_parser("collect", help="search와 동일")
     p_collect.add_argument("query", nargs="+", help="검색어")
     p_collect.add_argument("-n", "--count", type=int, default=10, help="키워드당 검색 건수")
-    p_collect.add_argument("-sort", default="date", choices=["date", "sim"], help="정렬")
+    p_collect.add_argument("-r", action="store_true", dest="relevance", help="관련성순 정렬")
     p_collect.add_argument("-f", dest="file", help="저장 파일명")
     p_collect.add_argument("-fast", action="store_true", help="본문 추출 생략")
     p_collect.set_defaults(func=cmd_search)
