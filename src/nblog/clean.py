@@ -33,6 +33,11 @@ def clean_blog_body(html_or_text: str) -> str:
     text = html_or_text
 
     # ══════════════════════════════════════
+    # 선행: Zero-Width 문자 즉시 제거 (후속 정규식 매칭 정확도 향상)
+    # ══════════════════════════════════════
+    text = re.sub("[\u200b\u200c\u200d\u200e\u200f\ufeff\u00a0\u2060\u2028\u2029]", "", text)
+
+    # ══════════════════════════════════════
     # 0단계: script/style 태그 통째 제거 (n8n Blog Cleaning 필수)
     # ══════════════════════════════════════
     text = re.sub(r"<script\b[^<]*(?:(?!</script>)<[^<]*)*</script>", "", text, flags=re.IGNORECASE)
@@ -207,7 +212,7 @@ def clean_blog_body(html_or_text: str) -> str:
     text = re.sub(r"\[[^\]]+\]\([^\)]+\)", "", text)
     text = re.sub(r"!\[.*?\]\(.*?\)", "", text)
     # Zero-Width Space 및 보이지 않는 문자 제거 (이미지 자리 잔재)
-    text = re.sub(r"[\u200b\u200c\u200d\u200e\u200f\ufeff\u00a0]", "", text)
+    text = re.sub("[\u200b\u200c\u200d\u200e\u200f\ufeff\u00a0]", "", text)
     # 공백 정리
     text = re.sub(r"\n{2,}", "\n\n", text)
     text = re.sub(r" {2,}", " ", text)

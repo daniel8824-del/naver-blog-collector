@@ -3,6 +3,7 @@
 import csv
 import json
 import io
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -64,24 +65,42 @@ def print_results(articles: list, query: str = ""):
     console.print()
 
 
+def _clean_for_cell(text: str, max_len: int = 32000) -> str:
+    """CSV/TXT 셀용 텍스트 정제: ZWSP 제거, 줄바꿈→공백, 연속 공백 축소, 엑셀 셀 한계 적용."""
+    # Zero-Width 문자 제거
+    text = re.sub("[\u200b\u200c\u200d\u200e\u200f\ufeff\u00a0\u2060\u2028\u2029]", "", text)
+    # 줄바꿈 → 공백
+    text = text.replace("\n", " ").replace("\r", " ")
+    # 연속 공백 축소
+    text = re.sub(r" {2,}", " ", text)
+    text = text.strip()
+    # 엑셀 셀 최대 글자 수 (32,767) 초과 방지
+    if len(text) > max_len:
+        text = text[:max_len]
+    return text
+
+
 def to_csv(articles: list, filepath: str, query: str = ""):
     """UTF-8 BOM CSV 파일로 저장."""
     path = _prepare_output_path(filepath)
 
-    with open(path, "w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(["키워드", "타이틀", "본문", "블로거", "링크", "날짜", "URL"])
+    # StringIO로 작성 후 마지막 줄바꿈 제거하여 엑셀 빈 행 방지
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["키워드", "타이틀", "본문", "블로거", "날짜", "URL"])
 
-        for a in articles:
-            writer.writerow([
-                a.get("keyword", query),
-                a.get("title", ""),
-                a.get("content", ""),
-                a.get("bloggerName", ""),
-                a.get("bloggerLink", ""),
-                a.get("postdate", ""),
-                a.get("url", ""),
-            ])
+    for a in articles:
+        writer.writerow([
+            a.get("keyword", query),
+            a.get("title", ""),
+            _clean_for_cell(a.get("content", "")),
+            a.get("bloggerName", ""),
+            a.get("postdate", ""),
+            a.get("url", ""),
+        ])
+
+    with open(path, "w", encoding="utf-8-sig", newline="") as f:
+        f.write(buf.getvalue().rstrip("\r\n"))
 
     console.print(f"[green]CSV 저장: {filepath}[/green]")
 

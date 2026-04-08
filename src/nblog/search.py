@@ -93,11 +93,11 @@ def search_blogs(
     seen_urls: set[str] = set()
 
     # API는 한 번에 최대 100건, start는 1~1000
-    remaining = min(count, 1000)
+    # 외부 블로그 필터링으로 결과가 줄 수 있으므로 충분히 가져옴
     start = 1
-    per_page = min(remaining, 100)
+    per_page = min(count * 2, 100)  # 필터링 감안해 2배 요청
 
-    while remaining > 0:
+    while len(results) < count:
         params = {
             "query": query,
             "display": str(per_page),
@@ -122,24 +122,36 @@ def search_blogs(
             link = _normalize_url(item.get("link", ""))
             if link in seen_urls:
                 continue
+            # 네이버 블로그만 수집 (티스토리 등 외부 블로그 제외)
+            parsed_link = urlparse(link)
+            if parsed_link.netloc not in ("blog.naver.com", "m.blog.naver.com"):
+                continue
             seen_urls.add(link)
 
+            # 제목 또는 설명에 검색어 핵심 단어가 포함된 글만 수집
+            title_text = _strip_html(item.get("title", ""))
+            desc_text = _strip_html(item.get("description", ""))
+            query_core = query.replace('"', '').strip()
+            if query_core not in title_text and query_core not in desc_text:
+                continue
+
             results.append(BlogResult(
-                title=_strip_html(item.get("title", "")),
+                title=title_text,
                 link=link,
-                description=_strip_html(item.get("description", "")),
+                description=desc_text,
                 bloggerName=item.get("bloggername", ""),
                 bloggerLink=item.get("bloggerlink", ""),
                 postdate=item.get("postdate", ""),
             ))
 
-        start += per_page
-        remaining -= per_page
-        per_page = min(remaining, 100)
+            if len(results) >= count:
+                break
 
-        # API 총 결과 수 확인
+        start += per_page
+
+        # API 총 결과 수 확인 / 페이징 한계
         total = data.get("total", 0)
-        if start > total or len(items) < per_page:
+        if start > min(total, 1000) or len(items) < per_page:
             break
 
     return results[:count]
